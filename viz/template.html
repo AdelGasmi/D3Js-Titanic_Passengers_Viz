@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Titanic passenger data visualization using D3Js v4 - by Adel Gasmi</title>
+<style>
+    body {
+        font: 20px sans-serif;
+    }
+    
+    .alive {
+        opacity: 1;
+        opacity: 1.;
+        fill-opacity: .01;
+        stroke: black;
+    }
+    
+    .dead {
+        opacity: .25;
+    }
+</style>
+
+<body>
+    <h1 style="margin-left: 100px;">Titanic Passengers Visualization Using D3Js</h1>
+    <!-- Create a div where the graph will take place -->
+    <div id="my_dataviz"></div>
+
+
+    <script src="../vendor/d3/d3.js"></script>
+    <script>
+        // set the dimensions and margins of the graph
+        var margin = {
+                top: 80,
+                right: 80,
+                bottom: 80,
+                left: 80
+            },
+            width = 1000 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+
+        // var color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        var symbol = d3.symbol();
+
+        // append the svg object to the body of the page
+        var svg = d3.select("#my_dataviz")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform",
+                "translate(" + margin.left + "," + margin.top + ")");
+
+        //Read the data
+        d3.tsv("../data/titanic.tsv", function(error, data) {
+            if (error) throw error;
+
+            // convert to float
+            data.forEach(function(d) {
+                d.age = +d.age;
+                d.fare = +d.fare;
+            });
+
+            // calculate the max value for "age"
+            max_age = d3.max(data, function(d) {
+                return d.age;
+            });
+            min_age = d3.min(data, function(d) {
+                return d.age;
+            });
+            console.log(min_age);
+
+            // Add X axis
+            var x = d3.scaleLinear()
+                .domain([0, max_age])
+                .range([0, width]);
+            svg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+            // calculate the max value for "fare"
+            max_fare = d3.max(data, function(d) {
+                return d.fare;
+            });
+
+            // add Y axis with a Log scale
+            var y = d3.scaleLog()
+                .domain([1, max_fare])
+                .range([height, 0]);
+
+            // plot the scale
+            svg.append("g")
+                .call(d3.axisLeft(y));
+
+            // drawing the dots 
+            var dots = svg.selectAll(".dot")
+                .data(data)
+                .enter()
+                .append("path")
+                .attr("class", "dot")
+                // radius of point 2.8
+                .attr("r", 2.8)
+                // circle for females, square for males
+                .attr("d", symbol.type(function(d) {
+                    if (d.sex == "female") {
+                        return d3.symbolCircle
+                    } else if (d.sex == "male") {
+                        return d3.symbolSquare
+                    }
+                }))
+                // add the different values depending on survival or not
+                .attr("class", function(d) {
+                    if (d.survived == 1) {
+                        return "dead";
+                    } else {
+                        return "alive";
+                    }
+                })
+                // position the dots (x,y) = (age,fare)
+                .attr("transform", function(d) {
+                    return "translate(" + x(d.age) + "," + y(d.fare) + ")";
+                })
+                // add svg title to each dot cotaining the full name of the passenger
+                .append("svg:title")
+                .text(function(d, i) {
+                    return "Full name: " + d.name;
+                });
+        });
+    </script>
+</body>
